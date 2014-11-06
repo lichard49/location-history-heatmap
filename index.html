@@ -31,29 +31,47 @@ $(document).ready(function()
     $.get('location-history-20141105.kml', {}, function(xml) {
       var lines = xml.split("\n");
 
-      var avgLat = 0;
-      var avgLng = 0;
-
+      var prevLat;
+      var prevLng;
+      var dataIndex = 0;
       for (var i = 0, len = lines.length; i < len; i++)
       {
         if(lines[i].indexOf("gx:coord") > -1)
         {
           var pointA = lines[i].replace(/ *\<[^>]*\> */g, "").replace(" 0", "").split(" ");
-          avgLat += point[0];
-          avgLng += point[1];
-          taxiData.push(new google.maps.LatLng(pointA[1], pointA[0]));
+          taxiData[dataIndex] = new google.maps.LatLng(pointA[1], pointA[0]);
+          if(taxiData.length > 0)
+          {
+            var x0 = Math.min(prevLat, pointA[1]);
+            var x1 = Math.max(prevLat, pointA[0]);
+            var y0 = Math.min(prevLng, pointA[1]);
+            var y1 = Math.max(prevLng, pointA[0]);
 
-          // if()
-          // {
-          //   taxiData[i-1]
+            var deltaLat = x1 - x0;
+            var deltaLng = y1 - y0;
+            var error = 0;
+            var deltaError = Math.abs(deltaLat/deltaLng);
+            var y = y0;
+            for(var x = x0; x < x1; x += 0.000005)
+            {
+              console.log(x + " / " + x1);
+              taxiData[++dataIndex] = new google.maps.LatLng(x, y);
+              error += deltaError;
+              if(error >= 0.5)
+              {
+                y += 0.000005;
+                error -= 1;
+              }
+            }
+            console.log("hi");
 
-          // }
-
+          }
+          prevLat = pointA[1];
+          prevLng = pointA[0];
+          dataIndex++;
         }
       }
 
-      avgLat /= lines.length;
-      avgLng /= lines.length;
 
       //console.log(taxiData);
 
